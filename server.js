@@ -39,11 +39,8 @@ app.post("/api/book", async (req, res) => {
   }
 
   try {
-    const message = await client.messages.create({
-      from:  "whatsapp:+14155238886",
-      to: process.env.TWILIO_ADMIN_WHATSAPP,
-      body: `📢 New Booking! 📅\n\nRoom: ${room}\nDate: ${date}\nCustomer: ${customer}\n📞 Phone: ${clientPhone}\n\nCheck the admin panel for details.`,
-    });
+    const fromNumber = "whatsapp:+14155238886"; // Twilio Sandbox WhatsApp Number
+    const toNumber = `whatsapp:${process.env.TWILIO_ADMIN_WHATSAPP}`; //  Admin's Registered WhatsApp
 
     console.log("✅ WhatsApp Message Sent:", message.sid);
 
