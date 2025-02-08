@@ -1,6 +1,12 @@
+require("dotenv").config();
+
+console.log("🔍 TWILIO_ACCOUNT_SID:", process.env.TWILIO_ACCOUNT_SID);
+console.log("🔍 TWILIO_AUTH_TOKEN:", process.env.TWILIO_AUTH_TOKEN);
+console.log("🔍 TWILIO_WHATSAPP_NUMBER:", process.env.TWILIO_WHATSAPP_NUMBER);
+console.log("🔍 TWILIO_ADMIN_WHATSAPP:", process.env.TWILIO_ADMIN_WHATSAPP);
 const express = require("express"); // Import Express
 const cors = require("cors");
-require("dotenv").config(); // Load environment variables
+//require("dotenv").config(); // Load environment variables
 
 const twilio = require("twilio"); // Import Twilio
 
@@ -27,30 +33,40 @@ app.get("/", (req, res) => {
 
 // Booking API with WhatsApp notifications
 app.post("/api/book", async (req, res) => {
-  
-  const { room, date, customer, clientPhone} = req.body;
-
-  console.log("📩 Received booking request:", { room, date, customer, clientPhone });
-
-
-  if (!room || !date || !customer || !clientPhone) {
-    console.error("❌ Missing fields in request!");
-    return res.status(400).json({ error: "Missing required fields" });
-  }
-
   try {
-    const fromNumber = "whatsapp:+14155238886"; // Twilio Sandbox WhatsApp Number
-    const toNumber = `whatsapp:${process.env.TWILIO_ADMIN_WHATSAPP}`; //  Admin's Registered WhatsApp
+    const { room, date, customer, clientPhone } = req.body;
 
-    console.log("✅ WhatsApp Message Sent:", message.sid);
+    console.log("📩 Received booking request:", { room, date, customer, clientPhone });
 
+    if (!room || !date || !customer || !clientPhone) {
+      console.error("❌ Missing fields in request!");
+      return res.status(400).json({ error: "Missing required fields" });
+    }
+
+    // Ensure Twilio numbers are correctly formatted
+    const fromNumber = "whatsapp:+14155238886"; // ✅ Twilio Sandbox WhatsApp Number
+    const toNumber = process.env.TWILIO_ADMIN_WHATSAPP.startsWith("whatsapp:")
+  ? process.env.TWILIO_ADMIN_WHATSAPP
+  : `whatsapp:${process.env.TWILIO_ADMIN_WHATSAPP}`;
+
+    console.log("📨 Sending WhatsApp message from:", fromNumber, "to:", toNumber);
+
+    // ✅ FIX: Use correct variable name (`messageResponse`) instead of `message`
+    const messageResponse = await client.messages.create({
+      from: fromNumber,
+      to: toNumber,
+      body: `📢 New Booking! 📅\n\nRoom: ${room}\nDate: ${date}\nCustomer: ${customer}\n📞 Phone: ${clientPhone}\n\nCheck the admin panel for details.`,
+    });
+
+    console.log("✅ WhatsApp Message Sent:", messageResponse.sid);
     res.json({ success: true, message: "Booking successful!" });
-    console.error("❌ Error sending WhatsApp:", error);
-    res.status(500).json({ error: error.message });
-  } catch (error) { // ✅ Added the missing `catch` block
-    console.error("❌ Error sending WhatsApp:", error);
-    res.status(500).json({ error: error.message });}
-});
 
+  } catch (error) {
+    console.error("❌ Error sending WhatsApp:", error);
+
+    // ✅ FIX: Ensure error messages are properly sent to frontend
+    res.status(500).json({ error: error.message || "Unknown error occurred" });
+  }
+});
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => console.log(`✅ Server running on port ${PORT}`));
